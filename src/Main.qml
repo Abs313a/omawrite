@@ -660,7 +660,7 @@ ApplicationWindow {
             anchors.leftMargin: 12
             anchors.bottomMargin: 10
             spacing: 12
-            opacity: 0.55
+            opacity: 0.75
 
             FooterIconButton {
                 objectName: "saveButton"

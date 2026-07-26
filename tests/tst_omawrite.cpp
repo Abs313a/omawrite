@@ -260,6 +260,7 @@ private slots:
 
         const QColor footerColor(QStringLiteral("#e0af68"));
         QCOMPARE(status->property("color").value<QColor>(), footerColor);
+        QCOMPARE(status->parent()->property("opacity").toReal(), qreal(0.75));
         QCOMPARE(hint->property("text").toString(), QStringLiteral("F1: Keybindings"));
         QCOMPARE(hint->property("color").value<QColor>(), footerColor);
         QCOMPARE(wordCount->property("color").value<QColor>(), footerColor);
