@@ -374,9 +374,12 @@ private slots:
         QVERIFY(qAbs(hintCenter - window->width() / 2.0) <= 1.0);
 
         window->setWidth(720);
-        QTRY_VERIFY(!hint->property("visible").toBool());
-        window->setWidth(1280);
-        QTRY_VERIFY(hint->property("visible").toBool());
+        QTRY_VERIFY(hint->property("visible").toBool()
+                    && qAbs(hint->property("x").toReal()
+                            + hint->property("width").toReal() / 2.0
+                            - window->width() / 2.0) <= 1.0);
+        QVERIFY(status->property("width").toReal()
+                <= status->property("implicitWidth").toReal() + 1.0);
     }
 
     void usesConfiguredTypography() {

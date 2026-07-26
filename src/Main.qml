@@ -744,7 +744,7 @@ ApplicationWindow {
                 font.pixelSize: 12
                 visible: text !== ""
                 elide: Text.ElideRight
-                width: Math.min(360, win.width / 3)
+                width: Math.min(implicitWidth, Math.min(360, win.width / 3))
                 height: 16
                 verticalAlignment: Text.AlignVCenter
             }
