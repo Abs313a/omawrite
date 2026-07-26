@@ -2,9 +2,9 @@
 
 My fork of [Omawrite](https://github.com/omacom-io/omawrite).
 
-![Omawrite dark theme](docs/Dark_theme.png)
+![Omawrite dark theme](assets/Dark_theme.png)
 
-![Omawrite light theme](docs/Light_theme.png)
+![Omawrite light theme](assets/Light_theme.png)
 
 A dead-simple Markdown writing app built with Qt Quick and C++ that
 automatically follows system dark/light mode.
