@@ -15,10 +15,7 @@ My fork of [Omawrite](https://github.com/omacom-io/omawrite).
 
 ## Install
 
-Install the `omawrite` package from the Omarchy Package Repository. Omawrite
-is installed by default on new Omarchy installations from Quattro onward.
-
-To build and install this fork on an Arch-based system:
+Build and install this fork on an Arch-based system:
 
 ```sh
 git clone https://github.com/Abs313a/omawrite.git
