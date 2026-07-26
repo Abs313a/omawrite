@@ -2,6 +2,7 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQuickWindow>
 #include <QQuickStyle>
 
 #include "backend.h"
@@ -189,6 +190,41 @@ private slots:
         QSignalSpy openDialogSpy(&backend, &Backend::openDialogRequested);
         QVERIFY(QMetaObject::invokeMethod(openButton, "clicked"));
         QCOMPARE(openDialogSpy.count(), 1);
+    }
+
+    void keyboardShortcutsActivate() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> root(component.create());
+        QVERIFY2(root, qPrintable(component.errorString()));
+
+        auto *window = qobject_cast<QQuickWindow *>(root.data());
+        QVERIFY(window);
+        window->show();
+        window->requestActivate();
+        QTRY_VERIFY(window->isActive());
+
+        QSignalSpy openDialogSpy(&backend, &Backend::openDialogRequested);
+        QTest::keyClick(window, Qt::Key_O, Qt::ControlModifier);
+        QTRY_COMPARE(openDialogSpy.count(), 1);
+
+        QVERIFY(!window->property("searchOpen").toBool());
+        QTest::keyClick(window, Qt::Key_F, Qt::ControlModifier);
+        QTRY_VERIFY(window->property("searchOpen").toBool());
+
+        QObject *shortcutsDialog =
+            window->findChild<QObject *>(QStringLiteral("shortcutsDialog"));
+        QVERIFY(shortcutsDialog);
+        QVERIFY(!shortcutsDialog->property("opened").toBool());
+
+        QTest::keyClick(window, Qt::Key_F1);
+        QTRY_VERIFY(shortcutsDialog->property("opened").toBool());
     }
 
     void remembersLastSaveDirectory() {
