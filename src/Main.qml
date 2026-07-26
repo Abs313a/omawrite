@@ -21,7 +21,8 @@ ApplicationWindow {
     readonly property color strongTextColor: backend.themeForeground
     readonly property color mutedColor: darkMode ? "#909191" : "#aeb1b5"
     readonly property color selectionFill: backend.themeSelection
-    readonly property int editorFontPixelSize: 20
+    readonly property color keybindingsOverlayColor: "#99000000"
+    readonly property int editorFontPixelSize: 18
     readonly property int editorWidth: Math.min(
         Math.round(writerFontMetrics.averageCharacterWidth * 65),
         Math.max(360, width - Math.round(writerFontMetrics.averageCharacterWidth * 20)))
@@ -82,6 +83,10 @@ ApplicationWindow {
             : Window.FullScreen;
     }
 
+    function showKeybindings() {
+        shortcutsDialog.open();
+    }
+
     function updateSearch() {
         var matches = [];
         var query = searchField.text;
@@ -132,6 +137,7 @@ ApplicationWindow {
         sequence: "Ctrl+S"
         context: Qt.ApplicationShortcut
         onActivated: backend.save()
+        onActivatedAmbiguously: backend.save()
     }
 
     Shortcut {
@@ -143,78 +149,101 @@ ApplicationWindow {
             searchField.forceActiveFocus();
             searchField.selectAll();
         }
+        onActivatedAmbiguously: {
+            searchOpen = true;
+            replaceOpen = true;
+            searchField.forceActiveFocus();
+            searchField.selectAll();
+        }
     }
 
     Shortcut {
         sequence: "Ctrl+B"
         context: Qt.WindowShortcut
         onActivated: editor.wrapSelection("**", "**")
+        onActivatedAmbiguously: editor.wrapSelection("**", "**")
     }
 
     Shortcut {
         sequence: "Ctrl+I"
         context: Qt.WindowShortcut
         onActivated: editor.wrapSelection("*", "*")
+        onActivatedAmbiguously: editor.wrapSelection("*", "*")
     }
 
     Shortcut {
         sequence: "Ctrl+K"
         context: Qt.WindowShortcut
         onActivated: editor.insertLink()
+        onActivatedAmbiguously: editor.insertLink()
     }
 
     Shortcut {
-        sequence: "Ctrl+?"
+        objectName: "keybindingsShortcut"
+        sequences: ["F1", "Ctrl+?"]
         context: Qt.ApplicationShortcut
-        onActivated: shortcutsDialog.open()
+        onActivated: win.showKeybindings()
+        onActivatedAmbiguously: win.showKeybindings()
     }
 
     Shortcut {
         sequence: "Ctrl+O"
         context: Qt.ApplicationShortcut
         onActivated: backend.openDialog()
+        onActivatedAmbiguously: backend.openDialog()
     }
 
     Shortcut {
         sequence: "Ctrl+N"
         context: Qt.ApplicationShortcut
         onActivated: backend.newWindow()
+        onActivatedAmbiguously: backend.newWindow()
     }
 
     Shortcut {
         sequence: "Ctrl+Shift+S"
         context: Qt.ApplicationShortcut
         onActivated: backend.saveAsDialog()
+        onActivatedAmbiguously: backend.saveAsDialog()
     }
 
     Shortcut {
         sequence: "Ctrl+P"
         context: Qt.ApplicationShortcut
         onActivated: backend.printDocument()
+        onActivatedAmbiguously: backend.printDocument()
     }
 
     Shortcut {
         sequences: ["Meta+F", "F11"]
         context: Qt.ApplicationShortcut
         onActivated: toggleFullScreen()
+        onActivatedAmbiguously: toggleFullScreen()
     }
 
     Shortcut {
         sequence: "Ctrl+Z"
         context: Qt.WindowShortcut
         onActivated: editor.undo()
+        onActivatedAmbiguously: editor.undo()
     }
 
     Shortcut {
         sequences: ["Ctrl+Shift+Z", "Ctrl+Y"]
         context: Qt.WindowShortcut
         onActivated: editor.redo()
+        onActivatedAmbiguously: editor.redo()
     }
 
     Shortcut {
         sequence: "Ctrl+F"
         context: Qt.ApplicationShortcut
         onActivated: {
+            searchOpen = true;
+            searchField.forceActiveFocus();
+            searchField.selectAll();
+        }
+        onActivatedAmbiguously: {
             searchOpen = true;
             searchField.forceActiveFocus();
             searchField.selectAll();
@@ -226,6 +255,7 @@ ApplicationWindow {
         context: Qt.ApplicationShortcut
         enabled: win.searchOpen
         onActivated: win.moveSearch(1)
+        onActivatedAmbiguously: win.moveSearch(1)
     }
 
     Connections {
@@ -315,12 +345,17 @@ ApplicationWindow {
 
     Dialog {
         id: shortcutsDialog
+        objectName: "shortcutsDialog"
         modal: true
         title: "Keyboard shortcuts"
         standardButtons: Dialog.Close
         anchors.centerIn: parent
+        Overlay.modal: Rectangle {
+            objectName: "shortcutsDimmer"
+            color: win.keybindingsOverlayColor
+        }
         contentItem: Label {
-            text: "Ctrl+S  Save\nCtrl+Shift+S  Save As\nCtrl+O  Open\nCtrl+N  New Window\nCtrl+F  Find\nCtrl+H  Find and Replace\nCtrl+B  Bold\nCtrl+I  Italic\nCtrl+K  Link\nCtrl+P  Print\nF11 / Super+F  Fullscreen\nCtrl+?  Shortcuts"
+            text: "F1  Keybindings\nCtrl+?  Keybindings\nCtrl+S  Save\nCtrl+Shift+S  Save As\nCtrl+O  Open\nCtrl+N  New Window\nCtrl+F  Find\nCtrl+H  Find and Replace\nCtrl+B  Bold\nCtrl+I  Italic\nCtrl+K  Link\nCtrl+P  Print\nF11 / Super+F  Fullscreen"
             lineHeight: 1.5
         }
     }
@@ -644,10 +679,11 @@ ApplicationWindow {
             }
 
             Label {
+                objectName: "footerDocumentStatus"
                 text: backend.status
-                color: win.mutedColor
+                color: "#e0af68"
                 font.family: "iA Writer Mono S"
-                font.pixelSize: 11
+                font.pixelSize: 12
                 visible: text !== ""
                 elide: Text.ElideRight
                 width: Math.min(360, win.width / 3)
@@ -657,15 +693,32 @@ ApplicationWindow {
         }
 
         Label {
+            id: footerKeybindingsHint
+            objectName: "footerKeybindingsHint"
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
+            text: "F1: Keybindings"
+            color: "#e0af68"
+            opacity: 0.75
+            font.family: "iA Writer Mono S"
+            font.pixelSize: 12
+            visible: x - 12 > footerStatus.x + footerStatus.width
+                     && x + width + 12 < footerWordCount.x
+        }
+
+        Label {
+            id: footerWordCount
+            objectName: "footerWordCount"
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.rightMargin: 12
             anchors.bottomMargin: 10
             text: backend.wordCount + (backend.wordCount === 1 ? " Word" : " Words")
-            color: win.mutedColor
+            color: "#e0af68"
             opacity: 0.75
             font.family: "iA Writer Mono S"
-            font.pixelSize: 11
+            font.pixelSize: 12
         }
 
 

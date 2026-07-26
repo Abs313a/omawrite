@@ -2,8 +2,10 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQuickTextDocument>
 #include <QQuickWindow>
 #include <QQuickStyle>
+#include <QTextBlock>
 
 #include "backend.h"
 #include "markdownhighlighter.h"
@@ -225,6 +227,87 @@ private slots:
 
         QTest::keyClick(window, Qt::Key_F1);
         QTRY_VERIFY(shortcutsDialog->property("opened").toBool());
+        QCOMPARE(window->property("keybindingsOverlayColor").value<QColor>(),
+                 QColor(QStringLiteral("#99000000")));
+    }
+
+    void footerKeybindingsHintAdapts() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> root(component.create());
+        QVERIFY2(root, qPrintable(component.errorString()));
+
+        auto *window = qobject_cast<QQuickWindow *>(root.data());
+        QVERIFY(window);
+        QObject *status =
+            window->findChild<QObject *>(QStringLiteral("footerDocumentStatus"));
+        QObject *hint =
+            window->findChild<QObject *>(QStringLiteral("footerKeybindingsHint"));
+        QObject *wordCount =
+            window->findChild<QObject *>(QStringLiteral("footerWordCount"));
+        QObject *editor =
+            window->findChild<QObject *>(QStringLiteral("sourceEditor"));
+        QVERIFY(status);
+        QVERIFY(hint);
+        QVERIFY(wordCount);
+        QVERIFY(editor);
+
+        const QColor footerColor(QStringLiteral("#e0af68"));
+        QCOMPARE(status->property("color").value<QColor>(), footerColor);
+        QCOMPARE(hint->property("text").toString(), QStringLiteral("F1: Keybindings"));
+        QCOMPARE(hint->property("color").value<QColor>(), footerColor);
+        QCOMPARE(wordCount->property("color").value<QColor>(), footerColor);
+
+        editor->setProperty("text", QStringLiteral("draft"));
+        QTRY_VERIFY(status->property("visible").toBool());
+
+        window->setWidth(1280);
+        QTRY_VERIFY(hint->property("visible").toBool());
+        const qreal hintCenter = hint->property("x").toReal()
+            + hint->property("width").toReal() / 2.0;
+        QVERIFY(qAbs(hintCenter - window->width() / 2.0) <= 1.0);
+
+        window->setWidth(720);
+        QTRY_VERIFY(!hint->property("visible").toBool());
+        window->setWidth(1280);
+        QTRY_VERIFY(hint->property("visible").toBool());
+    }
+
+    void usesConfiguredTypography() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> root(component.create());
+        QVERIFY2(root, qPrintable(component.errorString()));
+
+        QObject *editor =
+            root->findChild<QObject *>(QStringLiteral("sourceEditor"));
+        QObject *footer =
+            root->findChild<QObject *>(QStringLiteral("footerWordCount"));
+        QVERIFY(editor);
+        QVERIFY(footer);
+        QCOMPARE(editor->property("font").value<QFont>().family(),
+                 QStringLiteral("iA Writer Mono S"));
+        QCOMPARE(editor->property("font").value<QFont>().pixelSize(), 18);
+        QCOMPARE(footer->property("font").value<QFont>().pixelSize(), 12);
+
+        auto *quickDocument =
+            editor->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(quickDocument);
+        QVERIFY(quickDocument->textDocument());
+        QCOMPARE(quickDocument->textDocument()->firstBlock().blockFormat().lineHeight(),
+                 qreal(120));
     }
 
     void remembersLastSaveDirectory() {

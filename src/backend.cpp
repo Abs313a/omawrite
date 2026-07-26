@@ -33,7 +33,7 @@
 
 #include "markdownhighlighter.h"
 
-constexpr qreal typoraLineHeightPercent = 140;
+constexpr qreal documentLineHeightPercent = 120;
 const QString lastSaveDirectorySetting = QStringLiteral("file/lastSaveDirectory");
 
 QString Backend::normalizedLinkUrl(const QString &clipboardText) {
@@ -715,7 +715,7 @@ void Backend::applyDocumentTypography() {
         return;
 
     QTextBlockFormat blockFormat;
-    blockFormat.setLineHeight(typoraLineHeightPercent, QTextBlockFormat::ProportionalHeight);
+    blockFormat.setLineHeight(documentLineHeightPercent, QTextBlockFormat::ProportionalHeight);
 
     // A full pass is only used for freshly loaded/attached documents, so it is
     // safe to drop undo history here (re-enabling clears the stack anyway).
@@ -738,7 +738,7 @@ void Backend::reapplyTypographyToChange() {
         return;
 
     QTextBlockFormat blockFormat;
-    blockFormat.setLineHeight(typoraLineHeightPercent, QTextBlockFormat::ProportionalHeight);
+    blockFormat.setLineHeight(documentLineHeightPercent, QTextBlockFormat::ProportionalHeight);
 
     // Format only the block(s) touched by the last edit instead of the whole
     // document, and fold the change into the preceding edit command so a single
