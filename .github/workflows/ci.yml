@@ -17,13 +17,20 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Qt build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install --yes \
             build-essential \
+            qml6-module-qtqml \
+            qml6-module-qtqml-workerscript \
+            qml6-module-qtquick \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-dialogs \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-window \
             qt6-base-dev \
             qt6-declarative-dev
 
