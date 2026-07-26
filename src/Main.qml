@@ -32,6 +32,7 @@ ApplicationWindow {
     property var searchMatches: []
     property int searchMatchIndex: -1
     property url pendingOpenUrl
+    property url pendingSaveUrl
     property string pendingAction: ""
     property bool replaceOpen: false
     property bool awaitingPendingSave: false
@@ -58,6 +59,17 @@ ApplicationWindow {
         pendingOpenUrl = url;
         pendingAction = "open";
         unsavedChangesDialog.open();
+    }
+
+    function requestSaveAs(url) {
+        if (!backend.fileExists(url)) {
+            backend.saveAs(url);
+            return;
+        }
+
+        pendingSaveUrl = url;
+        overwriteDialog.fileName = url.toString().split("/").pop();
+        overwriteDialog.open();
     }
 
     function completePendingAction() {
@@ -180,7 +192,7 @@ ApplicationWindow {
 
     Shortcut {
         objectName: "keybindingsShortcut"
-        sequences: ["F1", "Ctrl+?"]
+        sequence: "F1"
         context: Qt.ApplicationShortcut
         onActivated: win.showKeybindings()
         onActivatedAmbiguously: win.showKeybindings()
@@ -215,7 +227,7 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequences: ["Meta+F", "F11"]
+        sequence: "F11"
         context: Qt.ApplicationShortcut
         onActivated: toggleFullScreen()
         onActivatedAmbiguously: toggleFullScreen()
@@ -229,7 +241,7 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequences: ["Ctrl+Shift+Z", "Ctrl+Y"]
+        sequence: "Ctrl+Shift+Z"
         context: Qt.WindowShortcut
         onActivated: editor.redo()
         onActivatedAmbiguously: editor.redo()
@@ -298,11 +310,45 @@ ApplicationWindow {
 
     Dialogs.FileDialog {
         id: saveFileDialog
+        objectName: "saveFileDialog"
         title: "Save File"
         fileMode: Dialogs.FileDialog.SaveFile
+        options: Dialogs.FileDialog.DontConfirmOverwrite
         nameFilters: ["Markdown files (*.md *.markdown)", "All files (*)"]
-        onAccepted: backend.saveAs(selectedFile)
+        onAccepted: win.requestSaveAs(selectedFile)
         onRejected: {
+            backend.fileDialogCanceled();
+            win.awaitingPendingSave = false;
+            win.pendingAction = "";
+        }
+    }
+
+    OverwriteDialog {
+        id: overwriteDialog
+        objectName: "overwriteDialog"
+        darkMode: win.darkMode
+        textColor: win.textColor
+        strongTextColor: win.strongTextColor
+        activeButtonColor: backend.themeAccent
+        overlayColor: win.keybindingsOverlayColor
+        containerWidth: win.width
+        containerHeight: win.height
+
+        onOverwriteRequested: {
+            var target = win.pendingSaveUrl;
+            win.pendingSaveUrl = "";
+            backend.saveAs(target);
+        }
+
+        onRetryRequested: {
+            saveFileDialog.selectedFile = win.pendingSaveUrl;
+            Qt.callLater(function() {
+                saveFileDialog.open();
+            });
+        }
+
+        onCancelRequested: {
+            win.pendingSaveUrl = "";
             backend.fileDialogCanceled();
             win.awaitingPendingSave = false;
             win.pendingAction = "";
@@ -355,7 +401,8 @@ ApplicationWindow {
             color: win.keybindingsOverlayColor
         }
         contentItem: Label {
-            text: "F1  Keybindings\nCtrl+?  Keybindings\nCtrl+S  Save\nCtrl+Shift+S  Save As\nCtrl+O  Open\nCtrl+N  New Window\nCtrl+F  Find\nCtrl+H  Find and Replace\nCtrl+B  Bold\nCtrl+I  Italic\nCtrl+K  Link\nCtrl+P  Print\nF11 / Super+F  Fullscreen"
+            objectName: "shortcutReference"
+            text: "F1  Keybindings\nCtrl+S  Save\nCtrl+Shift+S  Save As\nCtrl+O  Open\nCtrl+N  New Window\nCtrl+F  Find\nCtrl+H  Find and Replace\nCtrl+B  Bold\nCtrl+I  Italic\nCtrl+K  Link\nCtrl+P  Print\nCtrl+Shift+Z  Redo\nF11  Fullscreen"
             lineHeight: 1.5
         }
     }
@@ -661,6 +708,14 @@ ApplicationWindow {
             anchors.bottomMargin: 10
             spacing: 12
             opacity: 0.75
+
+            FooterIconButton {
+                objectName: "saveAsButton"
+                iconName: "save-as"
+                iconColor: win.mutedColor
+                tooltip: "Save As"
+                onClicked: backend.saveAsDialog()
+            }
 
             FooterIconButton {
                 objectName: "saveButton"

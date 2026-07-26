@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QFileDialog>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -114,6 +115,27 @@ private slots:
         QTRY_COMPARE(externalChangeSpy.count(), 1);
     }
 
+    void recognizesExistingLocalFiles() {
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        const QString existingPath = directory.filePath(QStringLiteral("existing.md"));
+        QFile existingFile(existingPath);
+        QVERIFY(existingFile.open(QIODevice::WriteOnly));
+        existingFile.close();
+
+        Backend backend;
+        bool exists = false;
+        QVERIFY(QMetaObject::invokeMethod(
+            &backend, "fileExists", Q_RETURN_ARG(bool, exists),
+            Q_ARG(QUrl, QUrl::fromLocalFile(existingPath))));
+        QVERIFY(exists);
+
+        QVERIFY(QMetaObject::invokeMethod(
+            &backend, "fileExists", Q_RETURN_ARG(bool, exists),
+            Q_ARG(QUrl, QUrl::fromLocalFile(directory.filePath(QStringLiteral("new.md"))))));
+        QVERIFY(!exists);
+    }
+
     void keepsCursorAndSelectionStableAcrossInsertions() {
         const QString mutationsPath = QFINDTESTDATA("../src/EditorMutations.js");
         QVERIFY(!mutationsPath.isEmpty());
@@ -181,17 +203,78 @@ private slots:
         QVERIFY(!window->findChild<QObject *>(QStringLiteral("modeToggle")));
 
         QObject *saveButton = window->findChild<QObject *>(QStringLiteral("saveButton"));
+        QObject *saveAsButton =
+            window->findChild<QObject *>(QStringLiteral("saveAsButton"));
         QObject *openButton = window->findChild<QObject *>(QStringLiteral("openButton"));
         QVERIFY(saveButton);
+        QVERIFY(saveAsButton);
         QVERIFY(openButton);
+        QVERIFY(saveAsButton->property("x").toReal() < saveButton->property("x").toReal());
+        QVERIFY(saveButton->property("x").toReal() < openButton->property("x").toReal());
 
         QSignalSpy saveDialogSpy(&backend, &Backend::saveDialogRequested);
-        QVERIFY(QMetaObject::invokeMethod(saveButton, "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(saveAsButton, "clicked"));
         QCOMPARE(saveDialogSpy.count(), 1);
+
+        QVERIFY(QMetaObject::invokeMethod(saveButton, "clicked"));
+        QCOMPARE(saveDialogSpy.count(), 2);
 
         QSignalSpy openDialogSpy(&backend, &Backend::openDialogRequested);
         QVERIFY(QMetaObject::invokeMethod(openButton, "clicked"));
         QCOMPARE(openDialogSpy.count(), 1);
+    }
+
+    void confirmsOverwriteInsideOmawrite() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        const QString existingPath = directory.filePath(QStringLiteral("existing.md"));
+        QFile existingFile(existingPath);
+        QVERIFY(existingFile.open(QIODevice::WriteOnly));
+        existingFile.close();
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> root(component.create());
+        QVERIFY2(root, qPrintable(component.errorString()));
+
+        QObject *saveFileDialog =
+            root->findChild<QObject *>(QStringLiteral("saveFileDialog"));
+        QObject *overwriteDialog =
+            root->findChild<QObject *>(QStringLiteral("overwriteDialog"));
+        QVERIFY(saveFileDialog);
+        QVERIFY(overwriteDialog);
+        QVERIFY(saveFileDialog->property("options").toInt()
+                & int(QFileDialog::DontConfirmOverwrite));
+
+        const QUrl existingUrl = QUrl::fromLocalFile(existingPath);
+        QVERIFY(QMetaObject::invokeMethod(
+            root.data(), "requestSaveAs", Q_ARG(QVariant, QVariant(existingUrl))));
+        QTRY_VERIFY(overwriteDialog->property("opened").toBool());
+        QCOMPARE(overwriteDialog->property("fileName").toString(),
+                 QStringLiteral("existing.md"));
+        QCOMPARE(root->property("keybindingsOverlayColor").value<QColor>(),
+                 QColor(QStringLiteral("#99000000")));
+
+        QObject *cancelButton =
+            overwriteDialog->findChild<QObject *>(QStringLiteral("overwriteCancelButton"));
+        QObject *noButton =
+            overwriteDialog->findChild<QObject *>(QStringLiteral("overwriteNoButton"));
+        QObject *confirmButton =
+            overwriteDialog->findChild<QObject *>(QStringLiteral("overwriteConfirmButton"));
+        QVERIFY(cancelButton);
+        QVERIFY(noButton);
+        QVERIFY(confirmButton);
+        QVERIFY(cancelButton->property("x").toReal() < noButton->property("x").toReal());
+        QVERIFY(noButton->property("x").toReal() < confirmButton->property("x").toReal());
+
+        QVERIFY(QMetaObject::invokeMethod(noButton, "clicked"));
+        QTRY_VERIFY(!overwriteDialog->property("opened").toBool());
+        QTRY_VERIFY(saveFileDialog->property("visible").toBool());
     }
 
     void keyboardShortcutsActivate() {
@@ -227,6 +310,13 @@ private slots:
 
         QTest::keyClick(window, Qt::Key_F1);
         QTRY_VERIFY(shortcutsDialog->property("opened").toBool());
+        QObject *shortcutReference =
+            shortcutsDialog->findChild<QObject *>(QStringLiteral("shortcutReference"));
+        QVERIFY(shortcutReference);
+        const QString shortcutText = shortcutReference->property("text").toString();
+        QVERIFY(!shortcutText.contains(QStringLiteral("Ctrl+?")));
+        QVERIFY(!shortcutText.contains(QStringLiteral("Ctrl+Y")));
+        QVERIFY(!shortcutText.contains(QStringLiteral("Super+F")));
         QCOMPARE(window->property("keybindingsOverlayColor").value<QColor>(),
                  QColor(QStringLiteral("#99000000")));
     }

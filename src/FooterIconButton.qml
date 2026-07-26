@@ -28,7 +28,7 @@ Item {
             context.lineCap = "round";
             context.lineJoin = "round";
             context.beginPath();
-            if (control.iconName === "save") {
+            if (control.iconName === "save" || control.iconName === "save-as") {
                 context.moveTo(2.5, 2.5);
                 context.lineTo(10.5, 2.5);
                 context.lineTo(13.5, 5.5);
@@ -43,6 +43,12 @@ Item {
                 context.lineTo(4.5, 9.5);
                 context.lineTo(11.5, 9.5);
                 context.lineTo(11.5, 13.5);
+                if (control.iconName === "save-as") {
+                    context.moveTo(9.5, 12.5);
+                    context.lineTo(13.5, 8.5);
+                    context.moveTo(12.5, 8.5);
+                    context.lineTo(13.5, 9.5);
+                }
             } else {
                 context.moveTo(2.5, 13);
                 context.lineTo(2.5, 3.5);

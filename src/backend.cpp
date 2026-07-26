@@ -214,6 +214,10 @@ void Backend::open(const QUrl &url) {
     setStatus(QStringLiteral("Opened %1").arg(fileName()));
 }
 
+bool Backend::fileExists(const QUrl &url) const {
+    return url.isLocalFile() && QFileInfo::exists(url.toLocalFile());
+}
+
 void Backend::save() {
     if (!m_fileUrl.isValid() || m_fileUrl.isEmpty()) {
         saveAsDialog();
