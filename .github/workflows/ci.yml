@@ -24,6 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             build-essential \
+            qml6-module-qt-labs-folderlistmodel \
             qml6-module-qtqml \
             qml6-module-qtqml-workerscript \
             qml6-module-qtquick \
