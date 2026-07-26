@@ -51,10 +51,12 @@ bool gsettingsSchemeIsDark(const QVariant &value, bool *known) {
 SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
     m_darkMode = detectDarkMode();
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     if (QGuiApplication::styleHints()) {
         connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
                 this, &SystemTheme::refresh);
     }
+#endif
 
     QDBusConnection::sessionBus().connect(
         QString(),
@@ -128,6 +130,7 @@ bool SystemTheme::portalDarkMode(bool *known) const {
 bool SystemTheme::qtDarkMode(bool *known) const {
     *known = false;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     if (!QGuiApplication::styleHints())
         return false;
 
@@ -140,6 +143,7 @@ bool SystemTheme::qtDarkMode(bool *known) const {
         *known = true;
         return false;
     }
+#endif
 
     return false;
 }
