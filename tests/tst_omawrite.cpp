@@ -295,6 +295,12 @@ private slots:
         window->requestActivate();
         QTRY_VERIFY(window->isActive());
 
+        QObject *unsavedDialog =
+            window->findChild<QObject *>(QStringLiteral("unsavedChangesDialog"));
+        QVERIFY(unsavedDialog);
+        QCOMPARE(unsavedDialog->property("overlayColor").value<QColor>(),
+                 QColor(QStringLiteral("#99000000")));
+
         QSignalSpy openDialogSpy(&backend, &Backend::openDialogRequested);
         QTest::keyClick(window, Qt::Key_O, Qt::ControlModifier);
         QTRY_COMPARE(openDialogSpy.count(), 1);

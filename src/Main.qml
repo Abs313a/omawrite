@@ -358,11 +358,13 @@ ApplicationWindow {
 
     UnsavedChangesDialog {
         id: unsavedChangesDialog
+        objectName: "unsavedChangesDialog"
         fileName: backend.fileName
         darkMode: win.darkMode
         textColor: win.textColor
         strongTextColor: win.strongTextColor
         activeButtonColor: backend.themeAccent
+        overlayColor: win.keybindingsOverlayColor
         containerWidth: win.width
         containerHeight: win.height
 

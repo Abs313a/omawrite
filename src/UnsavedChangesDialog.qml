@@ -9,6 +9,7 @@ Dialog {
     property color textColor: darkMode ? "#d0d0d0" : "#42464c"
     property color strongTextColor: darkMode ? "#eeeeee" : "#222324"
     property color activeButtonColor: "#428bca"
+    property color overlayColor: "#99000000"
     property int containerWidth: 420
     property int containerHeight: 320
 
@@ -26,6 +27,11 @@ Dialog {
     x: Math.round((containerWidth - width) / 2)
     y: Math.round((containerHeight - height) / 2)
     padding: 20
+
+    Overlay.modal: Rectangle {
+        objectName: "unsavedChangesDimmer"
+        color: root.overlayColor
+    }
 
     background: Rectangle {
         color: root.darkMode ? "#1a1a1a" : "#ffffff"
