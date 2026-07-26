@@ -350,10 +350,13 @@ private slots:
 
         const QColor footerColor(QStringLiteral("#e0af68"));
         QCOMPARE(status->property("color").value<QColor>(), footerColor);
-        QCOMPARE(status->parent()->property("opacity").toReal(), qreal(0.75));
+        QCOMPARE(status->parent()->property("opacity").toReal(), qreal(0.95));
         QCOMPARE(hint->property("text").toString(), QStringLiteral("F1: Keybindings"));
         QCOMPARE(hint->property("color").value<QColor>(), footerColor);
+        QCOMPARE(hint->property("opacity").toReal(), qreal(0.95));
         QCOMPARE(wordCount->property("color").value<QColor>(), footerColor);
+        QCOMPARE(wordCount->property("opacity").toReal(), qreal(0.95));
+        QCOMPARE(window->opacity(), qreal(0.85));
 
         editor->setProperty("text", QStringLiteral("draft"));
         QTRY_VERIFY(status->property("visible").toBool());

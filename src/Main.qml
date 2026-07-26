@@ -13,6 +13,7 @@ ApplicationWindow {
     minimumWidth: 720
     minimumHeight: 520
     visible: true
+    opacity: 0.85
     title: (backend.modified ? "* " : "") + backend.fileName + " - Omawrite"
 
     readonly property bool darkMode: backend.darkMode
@@ -707,7 +708,7 @@ ApplicationWindow {
             anchors.leftMargin: 12
             anchors.bottomMargin: 10
             spacing: 12
-            opacity: 0.75
+            opacity: 0.95
 
             FooterIconButton {
                 objectName: "saveAsButton"
@@ -755,7 +756,7 @@ ApplicationWindow {
             anchors.bottomMargin: 10
             text: "F1: Keybindings"
             color: "#e0af68"
-            opacity: 0.75
+            opacity: 0.95
             font.family: "iA Writer Mono S"
             font.pixelSize: 12
             visible: x - 12 > footerStatus.x + footerStatus.width
@@ -771,7 +772,7 @@ ApplicationWindow {
             anchors.bottomMargin: 10
             text: backend.wordCount + (backend.wordCount === 1 ? " Word" : " Words")
             color: "#e0af68"
-            opacity: 0.75
+            opacity: 0.95
             font.family: "iA Writer Mono S"
             font.pixelSize: 12
         }
